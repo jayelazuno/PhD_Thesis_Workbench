@@ -1,0 +1,108 @@
+---
+title: "Tidyverse"
+Author: "Joshua Ayelazuno"
+Date: '`Sys.Date()`'
+output: 
+  html_notebook: defualt 
+  pdf_document: defualt
+  html_document: defualt 
+
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+
+```{r}
+#install.packages("tidyverse")
+library(tidyverse)
+#install.packages(c("nycflights13", "gapminder", "Lahman")) # provide data on airline flights, world development, and baseball 
+
+#install.packages("palmerpenguins")
+#install.packages("ggthemes")
+library(palmerpenguins)
+library(ggthemes)
+```
+
+
+```{r}
+# Data visualization with ggplot2 
+ggplot(data = penguins,
+       mapping = aes(x = flipper_length_mm, y = body_mass_g, color = species)
+       ) +
+  geom_point() +
+  geom_smooth(method = "lm")
+```
+
+
+```{r}
+# Data visualization with ggplot2 
+ggplot(data = penguins,
+       mapping = aes(x = flipper_length_mm, y = body_mass_g) # define globally 
+       ) +
+  geom_point(mapping = aes(color = species, shape = species)) + # define locally 
+  geom_smooth(method = "lm") +
+  labs(
+    title = "Body mass and filpper lenght",
+    subtitle = "Dimensions for the Adelie, Chinstrap, and Gentoo Penguins",
+    x = "Flipper lenght (mm)", y = "Body mass (g)",
+    color = "Species", shape = "Species",
+    ) + 
+  scale_color_colorblind()
+```
+
+
+```{r}
+# Categorical variable - takes one of a small set of values. Visualized with a bar graph
+ggplot(penguins, aes(x = species)) +
+  geom_bar()
+# assign species to the y aesthetic and see how plot looks 
+ggplot(penguins, aes(y = fct_infreq(species))) +
+  geom_bar()
+# play with different plots 
+ggplot(penguins, aes(x = species)) +
+  geom_bar(color = "red") # the color function coats the boundary of the bars 
+ggplot(penguins, aes(x = species)) +
+  geom_bar(fill = "red") # the fill function colors the whole bar 
+```
+
+
+```{r}
+# reorder bars based on their frequencies using the fct_infreq function
+ggplot(penguins, aes(x = fct_infreq(species))) +
+  geom_bar()
+```
+
+
+```{r}
+#Numerical/quantitative data - can take a wide range of numerical values. can be continuous or discrete. Visualized using the histogram 
+ggplot(penguins, aes(x = body_mass_g)) +
+  geom_histogram(binwidth = 200)
+# always explore with different width intervals using the binwidth argument which is measured in the units of x variables 
+ggplot(penguins, aes(x = body_mass_g)) + 
+  geom_histogram(binwidth = 20) # is too narrow making it difficult to visualize the shape of the distributtion 
+ggplot(penguins, aes(x = body_mass_g)) + 
+  geom_histogram(binwidth = 2000) # too large resulting in data bein binned into 3 bars
+# alternative visualization plot is density plot which is a smooth out version of histogram. Normally used for a continuous data that comes from an underlying normal smooth distribution 
+ggplot(penguins, aes(x = body_mass_g)) + 
+    geom_density()
+
+```
+
+
+```{r}
+# Visualizing relationships: numercal and categorical variables 
+#To visualize the relationship between a numerical and a categorical variable we can use side-by-side box plots
+# box that indicates the range of the middle half of the data, a distance known as the interquartile range (IQR), stretching from the 25th percentile of the distribution to the 75th percentile. 
+#In the middle of the box is a line that displays the median, i.e. 50th percentile, of the distribution. These three lines give you a sense of the spread of the distribution and whether or not the distribution is symmetric about the median or skewed to one side.
+ggplot(penguins, aes(x = species, y = body_mass_g)) +
+  geom_boxplot()
+# Alternatively, we can make density plots with geom_density()
+ggplot(penguins, aes(x = body_mass_g, color = species)) +
+  geom_density(linewidth = 0.75) # customized using the linewidth argument to make them stand out
+# we can also use the color and fill arguments with alpha aes (values btwn 0 - 1, )
+
+```
+
+
+

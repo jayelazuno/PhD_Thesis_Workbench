@@ -1,0 +1,196 @@
+---
+title: "RNA_seq-Analysis_differential_gene_expression"
+Author: "Joshua Ayelazuno"
+Date: '`Sys.Date()`'
+output: 
+  html_notebook: defualt 
+  pdf_document: defualt
+  html_document: defualt 
+---
+
+
+```{r}
+# Adopted from the Cebola Lab, correspondence hannah.maude12@imperial.ac.uk
+## Differential expression
+
+#***All following code should be run in `R`.***
+
+#The differential gene expression analysis contains the following steps:
+
+#- Import count data
+#- Import data to DEseq2
+#- Differential gene expression
+#- QC plots
+# packages requiured 
+#if (!requireNamespace("BiocManager", quietly = TRUE))
+  #install.packages("BiocManager")
+
+#BiocManager::install("cqn") #optional for cqn normalisation
+#BiocManager::install("DESeq2") # for differential gene expression
+#BiocManager::install("tximport") # for use with Salmom, qausi aligner which generates TPM in quant.sf to create count matrix
+#BiocManager::install("biomaRt")
+
+# for GO enrichment Analsysis 
+#BiocManager::install("clusterProfiler")
+#BiocManager::install("org.Sc.sgd.db")  # for Saccharomyces cerevisiae
+#BiocManager::install("pathview")
+library(clusterProfiler)
+library(org.Sc.sgd.db)  # Load the yeast annotation package
+library(pathview)
+# Data visualization install tidyverse 
+#install.packages("tidyverse")
+library(tidyverse)
+library(reshape2)
+```
+
+
+```{r}
+# GO enrichment for RNA binding proteins 
+gene_symbols <- c("PAB1", "PUB1", "SSD1", "SCD6", "NAB2", "HRP1", "TIF4631", "TIF1", "PAT1", "DHH1", "CCR4", "PUF1", "PUF2", "PUF3", "PUF4", "PUF5", "MEX67", "UPF1", "KHD1", "NPL3", "MPT5", "LSM1", "LSM2", "LSM3", "LSM4", "LSM5", "LSM6", "LSM7", "SRP1")
+
+# Manually mapping gene symbols to ORF names 
+gene_orfs <- c("YER165W", "YNL016W", "YDR293C", "YBR257W", "YGL122C", "YOL123W", "YGR162W", "YDL229W", "YDR213W", "YDL160C", "YAL021C", "YGL014W", "YNL016W", "YGR019W", "YLL013C", "YGL014W", "YLR255C", "YMR125W", "YDL160C", "YPL235W", "YDR097C", "YNL147W", "YDL081C", "YDR378C", "YLR115W", "YML039W", "YLR264W", "YDR378C", "YOR178C")
+#GO Enrichment Analysis:
+gene_df <- bitr(gene_orfs, fromType = "ORF", toType = "ENTREZID", OrgDb = org.Sc.sgd.db)
+go_enrich <- enrichGO(gene = gene_df$ENTREZID, 
+                     OrgDb = org.Sc.sgd.db, 
+                     keyType = "ENTREZID", 
+                     ont = "ALL", 
+                     pAdjustMethod = "BH", 
+                     pvalueCutoff = 0.01, 
+                     qvalueCutoff = 0.05)
+# Extract top 20 GO terms by p-value
+top20_go <- go_enrich %>% 
+  as.data.frame() %>% 
+  arrange(p.adjust) %>% 
+  head(20)
+
+# Extract top 20 GO terms by p-value
+top20_go <- go_enrich %>% 
+  as.data.frame() %>% 
+  arrange(p.adjust) %>% 
+  head(20)
+
+# Prepare data for heatmap
+heatmap_data <- top20_go %>%
+  select(Description, p.adjust) %>%
+  mutate(p.adjust = -log10(p.adjust))
+
+# Reshape the data for the heatmap
+heatmap_data_long <- melt(heatmap_data, id.vars = "Description")
+
+# Generate the heatmap
+ggplot(heatmap_data_long, aes(x = variable, y = Description, fill = value)) +
+  geom_tile(color = "white") +
+  scale_fill_gradient(low = "white", high = "red") +
+  labs(title = "Top 20 GO Enrichment Terms for RNA Binding Proteins",
+       x = "Term",
+       y = "-log10(p.adjust)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+#barplot(kegg_enrich, showCategory = 20)
+#Pathway Visualization:
+pathview(gene.data = gene_df$ENTREZID, 
+         pathway.id = "sce04111",  # Example pathway ID for yeast
+         species = "sce")
+
+# Subset for the cellular_component from the go_enrich data 
+go_terms_of_interest <- c("cytoplasmic stress granule", 
+                          "ribonucleoprotein granule", 
+                          "cytoplasmic ribonucleoprotein granule", 
+                          "supramolecular complex", 
+                          "P-body")
+
+filtered_results <- go_enrich@result %>%
+    filter(Description %in% go_terms_of_interest)
+
+# Extract the relevant columns for plotting
+plot_data <- filtered_results %>%
+    select(Description, geneID) %>%
+    mutate(gene_count = sapply(strsplit(geneID, "/"), length))
+
+#make a bar plot
+ggplot(plot_data, aes(x = reorder(Description, -gene_count), y = gene_count)) +
+    geom_bar(stat = "identity", fill = "skyblue") +
+    theme_minimal() +
+    labs(title = "Number of Genes in Selected GO Categories",
+         x = "GO Term",
+         y = "Gene Count") +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+
+# plot the go term genes in each category 
+# Split geneID column to create a long-format data frame
+gene_data <- filtered_results %>%
+    dplyr::select(Description, geneID) %>%
+    separate_rows(geneID, sep = "/")
+
+# Add a count column (all counts will be 1 since each gene is counted individually)
+gene_data <- gene_data %>%
+    mutate(count = 1)
+# Map gene IDs to standard gene names using org.Sc.sgd.db
+# Check valid key types in org.Sc.sgd.db
+keytypes(org.Sc.sgd.db)
+
+
+gene_data <- gene_data %>%
+    left_join(gene_id_to_name, by = c("geneID" = "ORF"))
+
+# Function to create bar plot for a specific GO term
+plot_go_term <- function(data, term) {
+    ggplot(data %>% filter(Description == term), aes(x = GENENAME, y = count)) +
+        geom_bar(stat = "identity", fill = "skyblue") +
+        theme_minimal() +
+        labs(title = paste("Genes in", term),
+             x = "Gene",
+             y = "Count") +
+        theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 12))
+}
+
+# Plot for "cytoplasmic stress granule"
+plot_cytoplasmic_stress_granule <- plot_go_term(gene_data, "cytoplasmic stress granule")
+print(plot_cytoplasmic_stress_granule)
+
+# Plot for "ribonucleoprotein granule"
+plot_ribonucleoprotein_granule <- plot_go_term(gene_data, "ribonucleoprotein granule")
+print(plot_ribonucleoprotein_granule)
+
+# Plot for "cytoplasmic ribonucleoprotein granule"
+plot_cytoplasmic_ribonucleoprotein_granule <- plot_go_term(gene_data, "cytoplasmic ribonucleoprotein granule")
+print(plot_cytoplasmic_ribonucleoprotein_granule)
+
+# Plot for "supramolecular complex"
+plot_supramolecular_complex <- plot_go_term(gene_data, "supramolecular complex")
+print(plot_supramolecular_complex)
+
+# Plot for "P-body"
+plot_p_body <- plot_go_term(gene_data, "P-body")
+print(plot_p_body)
+```
+
+
+```{r}
+# Prepare a list to store data frames for each GO term
+go_term_gene_dfs <- list()
+
+# Extract gene names involved in each GO term
+for (i in 1:nrow(top20_go)) {
+  go_term <- top20_go[i, "Description"]
+  gene_ids <- strsplit(top20_go[i, "geneID"], "/")[[1]]
+  gene_names <- gene_df$GENENAME[match(gene_ids, gene_df$ENTREZID)]
+  go_term_gene_dfs[[go_term]] <- data.frame(GeneName = gene_names, stringsAsFactors = FALSE)
+}
+
+# Print each GO term data frame
+for (go_term in names(go_term_gene_dfs)) {
+  cat("\n", go_term, ":\n")
+  print(go_term_gene_dfs[[go_term]])
+}
+
+```
+
+
+```{r}
