@@ -1,13 +1,9 @@
 # Course materials - DO NOT commit
-courses/
 
-# Large binary files
-*.pdf
-*.xlsx
-*.xls
-*.tar
-*.gz
-*.zip
+Data/**
+
+
+
 
 # R workspace files
 .RData
@@ -31,21 +27,18 @@ renv.lock
 *.tmp
 *.log
 
-# Private data (keep local)
-Data/Macrophage/
-Data/Sc_OSR/
 
-# Generated figures (can regenerate)
-Data/*/figure-latex/
-Data/*/*.pdf
-Data/*/*_plot.pdf
-Data/*/*_profile.pdf
+# Catch-all for any other course directories
 
-# QC files (can regenerate)
-Data/*.GC_plot.pdf
-Data/*.NVC_plot.pdf
-Data/*.qual.boxplot.pdf
-Data/*.DupRate_plot.pdf
-Data/*.clipping_profile.pdf
-Data/*.deletion_profile.pdf
-Data/*.insertion_profile.pdf
+# Course materials - exclude everything
+!courses/.gitkeep
+!courses/.gitkeep
+!courses/.gitkeep
+!courses/.gitkeep
+!courses/*/.gitkeep
+
+# COURSE MATERIALS - IGNORE ALL FILES IN COURSE DIRECTORIES
+courses/*/*
+
+# BUT ALLOW .gitkeep FILES TO PRESERVE DIRECTORY STRUCTURE
+!courses/*/.gitkeep
