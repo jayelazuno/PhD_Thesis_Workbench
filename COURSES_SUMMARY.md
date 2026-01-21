@@ -1,6 +1,6 @@
 # PhD Coursework Summary
 
-This repository includes a directory structure documenting coursework completed during my PhD program at [Your University].
+This repository includes a directory structure documenting coursework completed during my PhD program at The University of Iowa Genetics (Computational) Program.
 
 ## Academic Training Areas:
 - Bioinformatics & Computational Biology
