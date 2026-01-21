@@ -1,2 +1,51 @@
-node_modules/
+# Course materials - DO NOT commit
+courses/
+
+# Large binary files
+*.pdf
+*.xlsx
+*.xls
+*.tar
+*.gz
+*.zip
+
+# R workspace files
+.RData
+.Rhistory
+.Rapp.history
+
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# R/RStudio files
 .Rproj.user
+*.Rproj
+renv/
+renv.lock
+
+# Temporary files
+*~
+*.tmp
+*.log
+
+# Private data (keep local)
+Data/Macrophage/
+Data/Sc_OSR/
+
+# Generated figures (can regenerate)
+Data/*/figure-latex/
+Data/*/*.pdf
+Data/*/*_plot.pdf
+Data/*/*_profile.pdf
+
+# QC files (can regenerate)
+Data/*.GC_plot.pdf
+Data/*.NVC_plot.pdf
+Data/*.qual.boxplot.pdf
+Data/*.DupRate_plot.pdf
+Data/*.clipping_profile.pdf
+Data/*.deletion_profile.pdf
+Data/*.insertion_profile.pdf
